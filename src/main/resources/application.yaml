@@ -1,0 +1,18 @@
+spring:
+  application:
+    name: taskly-todo
+
+server:
+  port: 8082
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: always
+
+aws:
+  region: ${AWS_REGION:eu-central-1}
