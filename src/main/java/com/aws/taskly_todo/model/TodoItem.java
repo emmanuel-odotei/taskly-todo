@@ -17,4 +17,5 @@ public class TodoItem {
     private String status;
     private String createdAt;
     private String updatedAt;
+    private String sortKey;
 }

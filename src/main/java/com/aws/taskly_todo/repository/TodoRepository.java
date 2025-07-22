@@ -8,15 +8,15 @@ import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.*;
 
 import java.time.Instant;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Repository
 public class TodoRepository {
     
+    public static final String TODOS = "TODOS";
+    public static final String CREATED_AT_INDEX = "CreatedAtIndex";
+    public static final String SORT_KEY_SORT_KEY = "sortKey = :sortKey";
     private final DynamoDbClient dynamoDbClient;
     private final String tableName = "TasklyTodoItems";
     
@@ -24,14 +24,15 @@ public class TodoRepository {
         this.dynamoDbClient = dynamoDbClient;
     }
     
-    public void save (TodoItem todo) {
+    public void save (String title, String description, String dueDate) {
         Map<String, AttributeValue> item = new HashMap<>();
-        item.put( "id", AttributeValue.builder().s( todo.getId() ).build() );
-        item.put( "title", AttributeValue.builder().s( todo.getTitle() ).build() );
-        item.put( "description", AttributeValue.builder().s( todo.getDescription() ).build() );
+        item.put( "id", AttributeValue.builder().s( UUID.randomUUID().toString() ).build() );
+        item.put( "title", AttributeValue.builder().s( title ).build() );
+        item.put( "description", AttributeValue.builder().s( description ).build() );
         item.put( "status", AttributeValue.builder().s( Status.PENDING.name() ).build() );
-        item.put( "dueDate", AttributeValue.builder().s( todo.getDueDate() ).build() );
+        item.put( "dueDate", AttributeValue.builder().s( dueDate ).build() );
         item.put( "createdAt", AttributeValue.builder().s( Instant.now().toString() ).build() );
+        item.put( "sortKey", AttributeValue.builder().s( TODOS ).build() );
         
         PutItemRequest request = PutItemRequest.builder()
                 .tableName( tableName )
@@ -42,38 +43,80 @@ public class TodoRepository {
     }
     
     public PaginatedResult<TodoItem> findAll (int limit, Map<String, AttributeValue> exclusiveStartKey) {
-        ScanRequest.Builder scanRequestBuilder = ScanRequest.builder()
+        QueryRequest.Builder queryBuilder = QueryRequest.builder()
                 .tableName( tableName )
-                .limit( limit );
+                .indexName( CREATED_AT_INDEX )
+                .keyConditionExpression( SORT_KEY_SORT_KEY )
+                .expressionAttributeValues( Map.of( ":sortKey", AttributeValue.builder().s( TODOS ).build() ) )
+                .limit( limit )
+                .scanIndexForward( false ); // Descending order
         
-        if ( exclusiveStartKey != null && !exclusiveStartKey.isEmpty() )
-            scanRequestBuilder.exclusiveStartKey( exclusiveStartKey );
-        
-        ScanResponse response = dynamoDbClient.scan( scanRequestBuilder.build() );
-        
-        List<TodoItem> todos = response.items().stream()
-                .map( this::mapToTodoItem )
-                .sorted( Comparator.comparing( TodoItem::getCreatedAt ).reversed() )
-                .collect( Collectors.toList() );
-        
-        return new PaginatedResult<>( todos, response.lastEvaluatedKey() );
+        return getTodoItemPaginatedResult( exclusiveStartKey, queryBuilder );
     }
     
-    public TodoItem findById(String id) {
+    public Optional<TodoItem> findById (String id) {
         Map<String, AttributeValue> key = new HashMap<>();
-        key.put("id", AttributeValue.builder().s(id).build());
+        key.put( "id", AttributeValue.builder().s( id ).build() );
         
         GetItemRequest request = GetItemRequest.builder()
-                .tableName(tableName)
-                .key(key)
+                .tableName( tableName )
+                .key( key )
                 .build();
         
-        Map<String, AttributeValue> item = dynamoDbClient.getItem(request).item();
+        Map<String, AttributeValue> item = dynamoDbClient.getItem( request ).item();
         
-        if (item == null || item.isEmpty()) {
-            return null;
+        if (item == null || item.isEmpty()) return Optional.empty();
+        
+        return Optional.of(mapToTodoItem(item));
+    }
+    
+    public PaginatedResult<TodoItem> findByStatus(String status, int limit, Map<String, AttributeValue> exclusiveStartKey) {
+        QueryRequest.Builder requestBuilder = QueryRequest.builder()
+                .tableName(tableName)
+                .indexName("StatusIndex")
+                .keyConditionExpression("#status = :status")
+                .expressionAttributeNames(Map.of("#status", "status"))
+                .expressionAttributeValues(Map.of(":status", AttributeValue.builder().s(status).build()))
+                .limit(limit)
+                .scanIndexForward(false);
+        
+        if (exclusiveStartKey != null && !exclusiveStartKey.isEmpty()) {
+            requestBuilder.exclusiveStartKey(exclusiveStartKey);
         }
-        return mapToTodoItem(item);
+        
+        return getTodoItemPaginatedResult( exclusiveStartKey, requestBuilder );
+    }
+    
+    public PaginatedResult<TodoItem> findByDueDate(String dueDate, int limit, Map<String, AttributeValue> exclusiveStartKey) {
+        QueryRequest.Builder requestBuilder = QueryRequest.builder()
+                .tableName(tableName)
+                .indexName("DueDateIndex")
+                .keyConditionExpression("dueDate = :dueDate")
+                .expressionAttributeValues(Map.of(":dueDate", AttributeValue.builder().s(dueDate).build()))
+                .limit(limit)
+                .scanIndexForward(false);
+        
+        if (exclusiveStartKey != null && !exclusiveStartKey.isEmpty()) {
+            requestBuilder.exclusiveStartKey(exclusiveStartKey);
+        }
+        
+        return getTodoItemPaginatedResult( exclusiveStartKey, requestBuilder );
+    }
+    
+    public PaginatedResult<TodoItem> findByStatusAndDueDate(String status, String dueDate, int limit, Map<String, AttributeValue> exclusiveStartKey) {
+        QueryRequest.Builder requestBuilder = QueryRequest.builder()
+                .tableName(tableName)
+                .indexName("StatusIndex")
+                .keyConditionExpression("#status = :status AND dueDate = :dueDate")
+                .expressionAttributeNames(Map.of("#status", "status"))
+                .expressionAttributeValues(Map.of(
+                        ":status", AttributeValue.builder().s(status).build(),
+                        ":dueDate", AttributeValue.builder().s(dueDate).build()
+                ))
+                .limit(limit)
+                .scanIndexForward(false);
+        
+        return getTodoItemPaginatedResult( exclusiveStartKey, requestBuilder );
     }
     
     public void deleteById (String id) {
@@ -123,7 +166,6 @@ public class TodoRepository {
                     .build() );
         }
         
-        // Always update the updatedAt timestamp to current time
         updates.put( "updatedAt", AttributeValueUpdate.builder()
                 .value( AttributeValue.builder().s( Instant.now().toString() ).build() )
                 .action( AttributeAction.PUT )
@@ -138,15 +180,29 @@ public class TodoRepository {
         dynamoDbClient.updateItem( request );
     }
     
-    private TodoItem mapToTodoItem (Map<String, AttributeValue> item) {
+    private TodoItem mapToTodoItem(Map<String, AttributeValue> item) {
         return new TodoItem(
-                item.get( "id" ).s(),
-                item.get( "title" ).s(),
-                item.get( "description" ).s(),
-                item.get( "status" ).s(),
-                item.get( "dueDate" ).s(),
-                item.get( "createdAt" ).s(),
-                item.get( "updatedAt" ).s()
+                item.get("id").s(),
+                item.get("title").s(),
+                item.get("description").s(),
+                item.get("dueDate").s(),
+                item.containsKey("status") ? item.get("status").s() : Status.PENDING.name(), // ✅ fallback
+                item.get("createdAt").s(),
+                item.containsKey("updatedAt") ? item.get("updatedAt").s() : null,            // optional field
+                item.get("sortKey").s()
         );
+    }
+    
+    private PaginatedResult<TodoItem> getTodoItemPaginatedResult (Map<String, AttributeValue> exclusiveStartKey, QueryRequest.Builder requestBuilder) {
+        if (exclusiveStartKey != null && !exclusiveStartKey.isEmpty())
+            requestBuilder.exclusiveStartKey( exclusiveStartKey );
+        
+        QueryResponse response = dynamoDbClient.query(requestBuilder.build());
+        
+        List<TodoItem> todos = response.items().stream()
+                .map( this::mapToTodoItem )
+                .collect( Collectors.toList() );
+        
+        return new PaginatedResult<>(todos, response.lastEvaluatedKey());
     }
 }
