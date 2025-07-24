@@ -203,6 +203,16 @@ public class TodoRepository {
                 .map( this::mapToTodoItem )
                 .collect( Collectors.toList() );
         
-        return new PaginatedResult<>(todos, response.lastEvaluatedKey());
+        // Handle encoding of LastEvaluatedKey
+        String lastKeyEncoded = null;
+        if (response.hasLastEvaluatedKey() && !response.lastEvaluatedKey().isEmpty()) {
+            Map<String, AttributeValue> lastEvaluatedKey = response.lastEvaluatedKey();
+            String keyString = lastEvaluatedKey.entrySet().stream()
+                    .map(entry -> entry.getKey() + "=" + entry.getValue().s())
+                    .collect(Collectors.joining(","));
+            lastKeyEncoded = Base64.getEncoder().encodeToString(keyString.getBytes());
+        }
+        
+        return new PaginatedResult<>(todos, lastKeyEncoded);
     }
 }

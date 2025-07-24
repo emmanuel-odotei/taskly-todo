@@ -5,9 +5,9 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
 public class TasklyTodoApplication {
-
-	public static void main(String[] args) {
-		SpringApplication.run(TasklyTodoApplication.class, args);
-	}
-
+    
+    public static void main (String[] args) {
+        SpringApplication.run( TasklyTodoApplication.class, args );
+    }
+    
 }

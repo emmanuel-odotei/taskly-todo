@@ -79,5 +79,4 @@ public class TasklyTodoService {
             return Collections.emptyMap();
         }
     }
-    
 }
