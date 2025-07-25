@@ -7,7 +7,7 @@ import org.springframework.stereotype.Repository;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.*;
 
-import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -18,7 +18,7 @@ public class TodoRepository {
     public static final String CREATED_AT_INDEX = "CreatedAtIndex";
     public static final String SORT_KEY_SORT_KEY = "sortKey = :sortKey";
     private final DynamoDbClient dynamoDbClient;
-    private final String tableName = "TasklyTodoItems";
+    private static final String tableName = "TasklyTodoItems";
     
     public TodoRepository (DynamoDbClient dynamoDbClient) {
         this.dynamoDbClient = dynamoDbClient;
@@ -31,7 +31,7 @@ public class TodoRepository {
         item.put( "description", AttributeValue.builder().s( description ).build() );
         item.put( "status", AttributeValue.builder().s( Status.PENDING.name() ).build() );
         item.put( "dueDate", AttributeValue.builder().s( dueDate ).build() );
-        item.put( "createdAt", AttributeValue.builder().s( Instant.now().toString() ).build() );
+        item.put( "createdAt", AttributeValue.builder().s( LocalDateTime.now().toString() ).build() );
         item.put( "sortKey", AttributeValue.builder().s( TODOS ).build() );
         
         PutItemRequest request = PutItemRequest.builder()
@@ -167,7 +167,7 @@ public class TodoRepository {
         }
         
         updates.put( "updatedAt", AttributeValueUpdate.builder()
-                .value( AttributeValue.builder().s( Instant.now().toString() ).build() )
+                .value( AttributeValue.builder().s( LocalDateTime.now().toString() ).build() )
                 .action( AttributeAction.PUT )
                 .build() );
         
