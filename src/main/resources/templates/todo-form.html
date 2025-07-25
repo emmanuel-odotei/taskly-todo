@@ -3,12 +3,47 @@
 <head>
     <meta charset="UTF-8">
     <title th:text="${isEdit} ? 'Edit Todo' : 'Create Todo'"></title>
+    <link rel="icon" href="/todo-icon.png" type="image/png">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <style>
+        :root {
+            --primary-color: #5a189a;
+            --gray-hover: #6c757d;
+        }
+
+        /* BACK BUTTON (outline-secondary) */
+        .btn-outline-secondary:hover {
+            background-color: var(--gray-hover);
+            color: white;
+            border-color: var(--gray-hover);
+        }
+
+        /* EDIT BUTTON (outline-primary theme) */
+        .btn-outline-warning {
+            color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+
+        .btn-outline-warning:hover {
+            background-color: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        .gradient-header {
+            background: linear-gradient(135deg, #5a189a, #d00072);
+            color: white;
+            padding: 1rem;
+            border-top-left-radius: 0.5rem;
+            border-top-right-radius: 0.5rem;
+        }
+    </style>
 </head>
 <body class="bg-light">
 <div class="container py-5">
     <div class="card shadow">
-        <div class="card-header bg-info text-white">
+        <div class="card-header gradient-header text-white">
             <h2 th:text="${isEdit} ? 'Edit Todo' : 'Create Todo'"></h2>
         </div>
         <div class="card-body">
@@ -51,9 +86,10 @@
                         </div>
 
                         <div class="d-flex justify-content-end gap-5">
-                            <button type="submit" class="btn btn-success w-95"
-                                    th:text="${isEdit} ? 'Update' : 'Create'"></button>
-                            <a th:href="@{/todos}" class="btn btn-secondary w-95">Cancel</a>
+                            <button type="submit"
+                                    th:text="${isEdit} ? 'Update' : 'Create'"
+                                    class="btn btn-outline-warning w-95"></button>
+                            <a th:href="@{/}" class="btn btn-outline-secondary w-95">Cancel</a>
                         </div>
                     </form>
                 </div>

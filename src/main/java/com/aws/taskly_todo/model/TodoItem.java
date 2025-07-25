@@ -18,4 +18,20 @@ public class TodoItem {
     private String createdAt;
     private String updatedAt;
     private String sortKey;
+    
+    /**
+     * Returns a Bootstrap class name corresponding to the status of the to-do item
+     * to style the status field in the UI.
+     *
+     * @return a CSS class name to style the status field in the UI.
+     */
+    public String getStatusStyleClass() {
+        return switch (status) {
+            case "PENDING" -> "bg-light text-secondary";
+            case "ONGOING" -> "bg-warning-subtle text-dark";
+            case "CANCELLED" -> "bg-danger-subtle text-dark";
+            case "COMPLETED"-> "bg-success-subtle text-dark";
+            default -> "";
+        };
+    }
 }

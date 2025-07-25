@@ -3,27 +3,75 @@
 <head>
     <meta charset="UTF-8">
     <title>Taskly - View Todo</title>
+    <link rel="icon" href="/todo-icon.png" type="image/png">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <style>
+        :root {
+            --primary-color: #5a189a;
+            --gray-hover: #6c757d;
+            --danger-hover: #dc3545;
+        }
+
+        .gradient-header {
+            background: linear-gradient(135deg, #5a189a, #d00072);
+            color: white;
+            padding: 1rem;
+            border-top-left-radius: 0.5rem;
+            border-top-right-radius: 0.5rem;
+        }
+
+        /* BACK BUTTON (outline-secondary) */
+        .btn-outline-secondary:hover {
+            background-color: var(--gray-hover);
+            color: white;
+            border-color: var(--gray-hover);
+        }
+
+        /* EDIT BUTTON (outline-primary theme) */
+        .btn-outline-warning {
+            color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+
+        .btn-outline-warning:hover {
+            background-color: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        /* DELETE BUTTON (outline-danger) */
+        .btn-outline-danger:hover {
+            background-color: var(--danger-hover);
+            color: white;
+            border-color: var(--danger-hover);
+        }
+    </style>
 </head>
 <body class="bg-light">
 <div class="container py-5">
     <div class="card shadow">
-        <div class="card-header bg-primary text-white">
+        <div class="card-header gradient-header text-white">
             <h3 th:text="${todo.title}">Todo Title</h3>
         </div>
         <div class="card-body">
-            <p><strong>Status:</strong> <span th:text="${todo.status}"></span></p>
+            <p><strong>Status:</strong>
+                <span class="badge rounded-pill px-3 py-2 fw-semibold text-center fs-7"
+                      th:text="${todo.status}"
+                      th:classappend="${todo.statusStyleClass}">
+                </span>
+            </p>
             <p><strong>Description:</strong> <span th:text="${todo.description}"></span></p>
             <p><strong>Due Date:</strong> <span th:text="${todo.dueDate}"></span></p>
             <p><strong>Created At:</strong> <span th:text="${todo.createdAt}"></span></p>
             <p><strong>Updated At:</strong> <span th:text="${todo.updatedAt}"></span></p>
         </div>
         <div class="card-footer d-flex justify-content-between">
-            <a th:href="@{/todos}" class="btn btn-secondary">Back to List</a>
+            <a th:href="@{/}" class="btn btn-outline-secondary">Back</a>
             <div>
-                <a th:href="@{/todos/{id}/edit(id=${todo.id})}" class="btn btn-warning">Edit</a>
+                <a th:href="@{/todos/{id}/edit(id=${todo.id})}" class="btn btn-outline-warning">Edit</a>
                 <form th:action="@{/todos/{id}/delete(id=${todo.id})}" method="post" class="d-inline">
-                    <button type="submit" class="btn btn-danger">Delete</button>
+                    <button type="submit" class="btn btn-outline-danger">Delete</button>
                 </form>
             </div>
         </div>

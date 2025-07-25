@@ -14,7 +14,7 @@ import java.util.Map;
 
 @Controller
 @RequiredArgsConstructor
-@RequestMapping( "/todos" )
+@RequestMapping( "/" )
 public class TasklyTodoController {
     private final TasklyTodoService tasklyTodoService;
     
@@ -67,7 +67,7 @@ public class TasklyTodoController {
      * @param model The model to populate with attributes.
      * @return The view name, which is "to-do-view".
      */
-    @GetMapping( "/{id}" )
+    @GetMapping( "todos/{id}" )
     public String viewTodo (@PathVariable String id, Model model) {
         TodoItem todo = tasklyTodoService.getTodoItem( id );
         model.addAttribute( "todo", todo );
@@ -79,7 +79,7 @@ public class TasklyTodoController {
      * @param model The model to populate with attributes.
      * @return The view name, which is "to-do-form".
      */
-    @GetMapping( "/new" )
+    @GetMapping( "todos/new" )
     public String showCreateForm (Model model) {
         model.addAttribute( "todo", new TodoItem() );
         model.addAttribute( "statuses", Status.values() );
@@ -92,10 +92,10 @@ public class TasklyTodoController {
      * @param todoItem The to-do item to be created, populated from the form submission.
      * @return A redirect to the list of todos.
      */
-    @PostMapping
+    @PostMapping( "todos" )
     public String createTodo (@ModelAttribute TodoItem todoItem) {
         tasklyTodoService.createTodo( todoItem.getTitle(), todoItem.getDescription(), todoItem.getDueDate() );
-        return "redirect:/todos";
+        return "redirect:/";
     }
     
     /**
@@ -104,7 +104,7 @@ public class TasklyTodoController {
      * @param model The model to populate with attributes.
      * @return The view name, which is "to-do-form".
      */
-    @GetMapping( "/{id}/edit" )
+    @GetMapping( "todos/{id}/edit" )
     public String showEditForm (@PathVariable String id, Model model) {
         TodoItem todo = tasklyTodoService.getTodoItem( id );
         
@@ -120,12 +120,12 @@ public class TasklyTodoController {
      * @param todoItem The updated to-do item, populated from the form submission.
      * @return A redirect to the list of todos.
      */
-    @PutMapping( "/{id}" )
+    @PutMapping( "todos/{id}" )
     public String updateTodo (@PathVariable String id, @ModelAttribute TodoItem todoItem) {
         tasklyTodoService.updateTodo( id, todoItem.getTitle(),
                 todoItem.getDescription(), todoItem.getDueDate(),
                 Status.valueOf( todoItem.getStatus() ) );
-        return "redirect:/todos";
+        return "redirect:/";
     }
     
     /**
@@ -134,14 +134,25 @@ public class TasklyTodoController {
      * @param id The ID of the to-do item to be deleted.
      * @return A redirect to the list of todos.
      */
-    @PostMapping( "/{id}/delete" )
+    @PostMapping( "todos/{id}/delete" )
     public String deleteTodo (@PathVariable String id) {
         tasklyTodoService.deleteTodo( id );
-        return "redirect:/todos";
+        return "redirect:/";
+    }
+    
+    /**
+     * Updates the status of a to-do item.
+     * @param id The ID of the to-do item to update.
+     * @param status The new status of the to-do item.
+     * @return A redirect to the list of todos.
+     */
+    @PostMapping("/todos/update-status")
+    public String updateStatus(@RequestParam String id, @RequestParam Status status) {
+        tasklyTodoService.updateStatus(id, status.name());
+        return "redirect:/";
     }
     
     //helper methods
-    
     /**
      * Updates the token stack by appending the last key.
      *

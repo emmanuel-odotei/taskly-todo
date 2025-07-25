@@ -61,6 +61,14 @@ public class TasklyTodoService {
         }
     }
     
+    public void updateStatus (String id, String status) {
+        try {
+            todoRepository.updateStatus( id, status );
+        } catch ( Exception e ) {
+            throw new RuntimeException( "Failed to update status" );
+        }
+    }
+    
     private Map<String, AttributeValue> decodeLastKey (String encodedKey) {
         if ( encodedKey == null || encodedKey.isEmpty() ) return Collections.emptyMap();
         

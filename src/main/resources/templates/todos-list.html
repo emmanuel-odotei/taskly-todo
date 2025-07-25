@@ -3,22 +3,78 @@
 <head>
     <meta charset="UTF-8">
     <title>Taskly - Todos</title>
+    <link rel="icon" href="/todo-icon.png" type="image/png">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+
+    <style>
+        :root {
+            --gradient: linear-gradient(135deg, #5a189a, #9d1bb3, #b12a89, #e23c88);
+            --primary-color: #5a189a;
+            --secondary-color: #e23c88;
+        }
+
+        .btn-outline-primary {
+            color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+
+        .btn-outline-primary:hover {
+            background-color: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        .gradient-text {
+            background: var(--gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .btn-gradient {
+            background: var(--gradient);
+            color: white;
+            border: none;
+        }
+
+        .btn-gradient:hover {
+            opacity: 0.9;
+        }
+
+        .table thead th {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .table-rounded {
+            border: 1px solid #dee2e6;
+            border-radius: 12px;
+            overflow: hidden;
+            background-color: white;
+        }
+
+        /* Optional: remove vertical borders */
+        .table-rounded td,
+        .table-rounded th {
+            border: none;
+        }
+    </style>
 </head>
 <body class="bg-light">
 <div class="container py-5">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <a th:href="@{/todos}" style="text-decoration: none;">
-            <h1 class="mb-0"
-                style="font-family: 'Poppins', sans-serif; font-weight: 700; color: #000; font-size: 2.7rem;">
+        <a th:href="@{/}" style="text-decoration: none;">
+            <h1 class="mb-0 gradient-text"
+                style="font-family: 'Poppins', sans-serif; font-weight: 700; font-size: 2.7rem;">
+                <img src="/todo-icon.png" alt="Taskly Logo" width="40" height="40">
                 Taskly Todos
             </h1>
         </a>
-        <a th:href="@{/todos/new}" class="btn btn-success px-4">Create New Todo</a>
+        <a th:href="@{/todos/new}" class="btn btn-gradient px-4">Create New Todo</a>
     </div>
 
-    <form method="get" th:action="@{/todos}" class="row mb-4 g-2">
+    <form method="get" th:action="@{/}" class="row mb-4 g-2">
         <div class="col-md-4">
             <label>
                 <select name="status" class="form-select">
@@ -40,50 +96,86 @@
         </div>
         <div class="col-md-4 d-flex gap-2">
             <button type="submit" class="btn btn-outline-primary">Filter</button>
-            <a th:href="@{/todos}" class="btn btn-outline-secondary">Reset</a>
+            <a th:href="@{/}" class="btn btn-outline-secondary">Reset</a>
         </div>
     </form>
 
-    <table class="table table-striped table-bordered">
-        <thead class="table-dark">
-        <tr>
-            <th>Title</th>
-            <th>Status</th>
-            <th>Due Date</th>
-            <th>Actions</th>
-        </tr>
-        </thead>
-        <tbody>
-        <tr th:each="todo : ${todos}">
-            <td th:text="${todo.title}"></td>
-            <td th:text="${todo.status}"></td>
-            <td th:text="${todo.dueDate}"></td>
-            <td>
-                <a th:href="@{/todos/{id}(id=${todo.id})}" class="btn btn-info btn-sm">View</a>
-                <a th:href="@{/todos/{id}/edit(id=${todo.id})}" class="btn btn-warning btn-sm">Edit</a>
-                <form th:action="@{/todos/{id}/delete(id=${todo.id})}" method="post" class="d-inline">
-                    <button type="submit" class="btn btn-danger btn-sm">Delete</button>
-                </form>
-            </td>
-        </tr>
-        </tbody>
-    </table>
+    <div class="table-rounded">
+        <table class="table mb-0">
+            <thead class="table-dark">
+            <tr>
+                <th class="text-center">Title</th>
+                <th class="text-center">Status</th>
+                <th class="text-center">Due Date</th>
+                <th class="text-center">Actions</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="todo : ${todos}">
+                <!-- Title Column -->
+                <td style="width: 250px;" th:text="${todo.title}"></td>
 
+                <td class="text-center align-middle" style="width: 250px;">
+                    <form th:action="@{/todos/update-status}" class="d-flex justify-content-center" method="post">
+                        <input type="hidden" name="id" th:value="${todo.id}"/>
+                        <div class="text-center">
+                            <select name="status"
+                                    class="form-select form-select-sm text-center fw-semibold rounded-pill px-2 py-1"
+                                    style="width: 150px;"
+                                    th:classappend="${todo.statusStyleClass}"
+                                    onchange="this.form.submit()">
+                                <option th:each="status : ${statuses}"
+                                        th:value="${status}"
+                                        th:text="${status}"
+                                        th:selected="${status.name() == todo.status}">
+                                </option>
+                            </select>
+                        </div>
+                    </form>
+                </td>
+
+                <!-- Due Date Column -->
+                <td class="text-center align-middle" style="width: 250px;" th:text="${todo.dueDate}"></td>
+
+                <!-- Actions Dropdown Column -->
+                <td class="text-center align-middle" style="width: 150px;">
+                    <div class="dropdown">
+                        <button class="btn p-0 border-0 bg-transparent" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-three-dots-vertical fs-5 text-secondary"></i>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li>
+                                <a class="dropdown-item" th:href="@{/todos/{id}(id=${todo.id})}">View</a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" th:href="@{/todos/{id}/edit(id=${todo.id})}">Edit</a>
+                            </li>
+                            <li>
+                                <form th:action="@{/todos/{id}/delete(id=${todo.id})}" method="post">
+                                    <button type="submit" class="dropdown-item text-danger">Delete</button>
+                                </form>
+                            </li>
+                        </ul>
+                    </div>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
     <div class="mt-4 d-flex gap-2">
         <!-- Previous Page Button -->
         <form th:if="${prevLastKey != null}"
-              th:action="@{/todos}" method="get" class="d-inline">
-            <input type="hidden" name="limit" th:value="${limit}" />
-            <input type="hidden" name="status" th:value="${selectedStatus}" />
-            <input type="hidden" name="dueDate" th:value="${selectedDueDate}" />
-            <input type="hidden" name="lastKey" th:value="${prevLastKey}" />
-            <input type="hidden" name="tokenStack" th:value="${prevTokenStack}" />
+              th:action="@{/}" method="get" class="d-inline">
+            <input type="hidden" name="limit" th:value="${limit}"/>
+            <input type="hidden" name="status" th:value="${selectedStatus}"/>
+            <input type="hidden" name="dueDate" th:value="${selectedDueDate}"/>
+            <input type="hidden" name="lastKey" th:value="${prevLastKey}"/>
+            <input type="hidden" name="tokenStack" th:value="${prevTokenStack}"/>
             <button type="submit" class="btn btn-outline-secondary">Previous</button>
         </form>
 
-
         <!-- Next Page Button -->
-        <form th:action="@{/todos}" method="get" class="d-inline">
+        <form th:action="@{/}" method="get" class="d-inline">
             <input type="hidden" name="limit" th:value="${limit}"/>
             <input type="hidden" name="status" th:value="${selectedStatus}"/>
             <input type="hidden" name="dueDate" th:value="${selectedDueDate}"/>
@@ -97,5 +189,6 @@
         </form>
     </div>
 </div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
